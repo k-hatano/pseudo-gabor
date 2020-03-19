@@ -1,11 +1,12 @@
 
-var canvasWidth = 480;
+var canvasWidth = 640;
 var canvasHeight = 480;
 var gaborSize = 64;
 var gaborPadding = 16;
 
-var gaborTableWidth = 6;
+var gaborTableWidth = 8;
 var gaborTableHeight = 6;
+var gaborDuplicates = 3;
 var gaborTable = new Array(gaborTableWidth);
 
 onload = function() {
@@ -19,40 +20,35 @@ function generate() {
 }
 
 function generateGaborTable() {
-    for (var i = 0; i < gaborTableHeight; i++) {
-        gaborTable[i] = new Array(gaborTableHeight);
-        for (var j = 0; j < gaborTableWidth; j++) {
+    for (var i = 0; i < gaborTableWidth; i++) {
+        gaborTable[i] = new Array(gaborTableWidth);
+        for (var j = 0; j < gaborTableHeight; j++) {
             gaborTable[i][j] = -1;
         }
     }
 
-    var rest = gaborTableWidth * gaborTableHeight;
-    var x1 = 0;
-    var y1 = 0;
-    var x2 = 0;
-    var y2 = 0;
-    var numRad = 8;
-    var looping = 0;
-    while (rest > 0) {
-        x1 = Math.floor(Math.random() * gaborTableHeight);
-        y1 = Math.floor(Math.random() * gaborTableWidth);
-        x2 = Math.floor(Math.random() * gaborTableHeight);
-        y2 = Math.floor(Math.random() * gaborTableWidth);
-        if (!(x1 == x2 && y1 == y2) && gaborTable[x1][y1] < 0 && gaborTable[x2][y2] < 0) {
-            rest -= 2;
-            gaborTable[x1][y1] = numRad;
-            gaborTable[x2][y2] = numRad;
-            numRad++;
-            looping = 0;
-            drawCanvas();
-        } else {
-            looping++;
-            if (looping > 10000) {
-                /* escape from infinite loop */
-                break;
-            }
+    var rests = new Array(0);
+    for (var i = 0; i < gaborTableWidth; i++) {
+        for (var j = 0; j < gaborTableHeight; j++) {
+            var position = {x:i, y:j};
+            rests.push(position);
         }
     }
+
+    var numRad = 8;
+    var looping = 0;
+    while (rests.length > 0) {
+        var objects = new Array();
+        for (var i = 0; i < gaborDuplicates; i++) {
+            var objectIndex = Math.floor(Math.random() * rests.length);
+            var object = rests[objectIndex];
+            objects.push(object);
+            gaborTable[object.x][object.y] = numRad;
+            rests.splice(objectIndex, 1);
+        }
+        numRad++;
+    }
+    drawCanvas();
 }
 
 function drawCanvas() {
@@ -64,8 +60,8 @@ function drawCanvas() {
     context.fillStyle = "black";
     context.strokeStyle = "black";
 
-    for (var i = 0; i < gaborTableHeight; i++) {
-        for (var j = 0; j < gaborTableWidth; j++) {
+    for (var i = 0; i < gaborTableWidth; i++) {
+        for (var j = 0; j < gaborTableHeight; j++) {
             var num = Math.floor(gaborTable[i][j] / 4);
             var radius = (gaborTable[i][j] % 4) * 45;
             drawGabor(imageData,
@@ -88,7 +84,7 @@ function drawGabor(imageDataRef, x, y, num, radius) {
                 continue;
             }
 
-            var baseIndex = (tmpX * canvasWidth + tmpY) * 4;
+            var baseIndex = (tmpY * canvasWidth + tmpX) * 4;
             var xInGabor = Math.cos(radius / 180.0 * Math.PI) * xDelta
                          + Math.sin(radius / 180.0 * Math.PI) * yDelta;
 
